@@ -2,14 +2,14 @@
 
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxnewfont}[2015/10/15 v0.2]
+\ProvidesPackage{bxnewfont}[2016/03/27 v0.2]
 
 %% preparation
 \def\bxnf@pkgname{bxnewfont}
 \def\bxnf@error{\PackageError\bxnf@pkgname}
 \providecommand\bxDebug[1]{}
 
-%--------------------------------------- handling options
+%--------------------------------------- options
 
 %% variables
 \newif\ifbxnf@newfont
@@ -20,11 +20,11 @@
 }
 \ProcessOptions\relax
 
-%---------------------------------------  helpers
+%---------------------------------------  general
 
 %% load packages
 \RequirePackage{etoolbox}
-\ifx\newrobustcmd\@undefined
+\ifx\newrobustcmd\@undefined % non-e-TeX
 \expandafter\endinput\fi\relax
 
 %% unique tokens
@@ -40,7 +40,7 @@
   \else \expandafter\@secondoftwo \fi
 }
 
-%% \ifbxnf@ptex
+%% \ifbxnf@ptex : engine is pTeX?
 \newbool{bxnf@ptex}
 \begingroup
   \edef\bxnf@tmpa{\string\tfont}\edef\bxnf@tmpb{\meaning\tfont}
@@ -50,12 +50,13 @@
 %--------------------------------------- main
 
 %% variables
-\newbool{bxnf@fixed}
-\let\bxnf@font\relax
-\let\bxnf@tfm\relax
-\let\bxnf@atcl\relax
-\let\bxnf@fam\relax
-\let\bxnf@type\relax
+\newbool{bxnf@fixed}  % fixed size?
+\let\bxnf@font\relax  % font-spec string
+\let\bxnf@tfm\relax   % tfm name
+\let\bxnf@atcl\relax  % at-clause
+\let\bxnf@enc\relax   % encoding
+\let\bxnf@fam\relax   % family
+\let\bxnf@type\relax  % 1=normal,2=pTeX-yoko,3=pTeX-tate
 \let\bxnf@size\relax
 
 %%<*> \newfontx*[<encoding>]{<tfm-spec>}
@@ -85,6 +86,7 @@
 }
 
 %% \bxnf@split@name
+% Parses \bxnf@font and sets \bxnf@tfm and \bxnf@atcl.
 \def\bxnf@next#1{%
   \def\bxnf@split@name{%
     \expandafter\bxnf@split@name@a\bxnf@font\bxnf@mk#1\bxnf@end
@@ -104,6 +106,7 @@
 \bxnf@next{ }
 
 %% \bxnf@check@param
+% Sets bxnf@ok.
 \def\bxnf@check@param{%
   \bxnf@oktrue
   \bxnf@get@tfm@info
@@ -115,6 +118,7 @@
     \bxnf@okfalse
   \else
     \ifx\bxnf@enc\@empty
+      % resolve encoding when unspecified
       \ifcase\bxnf@type\or
         \let\bxnf@enc\cf@encoding
       \or % pTeX-yoko
@@ -141,8 +145,11 @@
 %% \bxnf@declare
 \def\bxnf@declare{%
   \bxnf@get@family@name
-  \bxnf@set@family@param
-  \bxnf@declare@family
+  \unless\ifbxnf@ok
+    \bxnf@set@family@param
+    \bxnf@declare@family
+  \fi
+  \bxnf@oktrue
 }
 
 %% \bxnf@make@cmd\CS
@@ -171,34 +178,54 @@ __\bxnf@select@family{#1}}%
 
 %--------------------------------------- Family name
 
+%% variables
+%\[bxnf@varid/<tfm>] % maximum used id number
+%\[bxnf@prm/<family>] % font parameter ({<enc>}{<size>})
+%\[bxnf@pc/<spec>] % cache
+
 %% \bxnf@get@family@name
+% Generates a family name and returns to \bxnf@fam.
+% The name is of the form "<tfm-name>(<id>)".
 \def\bxnf@get@family@name{%
-  \csnumdef{bxnf@varid/\bxnf@tfm}%
-      {\csuse{bxnf@varid/\bxnf@tfm}+1}%
-  \edef\bxnf@fam{\bxnf@tfm(\csuse{bxnf@varid/\bxnf@tfm})}%
+  \def\bxnf@tmpa{bxnf@pc/\bxnf@enc:\bxnf@tfm:%
+      \ifbxnf@fixed \the\dimexpr\bxnf@size\relax \fi}%
+  \letcs\bxnf@fam{\bxnf@tmpa}%
+  \ifdef\bxnf@fam{%
+    \bxDebug{\bxnf@tmpa==\bxnf@fam}%
+    \bxnf@oktrue
+  }{%else
+    \csnumdef{bxnf@varid/\bxnf@tfm}{\csuse{bxnf@varid/\bxnf@tfm}+1}%
+    \edef\bxnf@fam{\bxnf@tfm(\csuse{bxnf@varid/\bxnf@tfm})}%
+    \cslet{\bxnf@tmpa}\bxnf@fam
+    \bxDebug{\bxnf@tmpa:=\bxnf@fam}%
+    \bxnf@okfalse
+  }%
 }
 
 %% \def\bxnf@set@family@param
+% Sets \[bxnf@prm/*].
 \def\bxnf@set@family@param{%
   \csedef{bxnf@prm/\bxnf@fam}{{\bxnf@enc}%
-    {\ifbxnf@fixed \expandafter\rem@pt\bxnf@size \fi}}%
-  \bxDebug{bxnf@prm/\bxnf@fam=\csuse{bxnf@prm/\bxnf@fam}}%
+      {\ifbxnf@fixed \expandafter\rem@pt\bxnf@size \fi}}%
+  \bxDebug{bxnf@prm/\bxnf@fam:=\csuse{bxnf@prm/\bxnf@fam}}%
 }
 
 %% \bxnf@declare@family
 \def\bxnf@declare@family{%
   \DeclareFontFamily{\bxnf@enc}{\bxnf@fam}{}%
-  \DeclareFontShape{\bxnf@enc}{\bxnf@fam}{m}{n}{%
-    <->\bxnf@tfm}{}%
+  \DeclareFontShape{\bxnf@enc}{\bxnf@fam}{m}{n}%
+      {<->\bxnf@tfm}{}%
+  % In pTeX, a dummy entry must be declared for the
+  % encoding counterpart.
   \let\bxnf@tmpb\relax
-  \ifcase\bxnf@type\or
-  \or \letcs\bxnf@tmpb{t@enc@\bxnf@enc}%
-  \or \letcs\bxnf@tmpb{y@enc@\bxnf@enc}%
+  \ifcase\bxnf@type\or % no-op for normal
+  \or \letcs\bxnf@tmpb{t@enc@\bxnf@enc}% yoko->tate
+  \or \letcs\bxnf@tmpb{y@enc@\bxnf@enc}% tate->yoko
   \fi
   \unless\ifx\bxnf@tmpb\relax
     \DeclareFontFamily{\bxnf@tmpb}{\bxnf@fam}{}%
-    \DeclareFontShape{\bxnf@tmpb}{\bxnf@fam}{m}{n}{%
-      <->ssub*\kanjifamilydefault/m/n}{}%
+    \DeclareFontShape{\bxnf@tmpb}{\bxnf@fam}{m}{n}%
+        {<->ssub*\kanjifamilydefault/m/n}{}%
   \fi
 }
 
