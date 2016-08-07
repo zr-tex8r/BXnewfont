@@ -252,16 +252,16 @@ __\bxnf@select@family{#1}}%
 %--------------------------------------- Family name
 
 %% variables
-%\[bxnf@varid/<tfm>] % maximum used id number
-%\[bxnf@prm/<family>] % font parameter ({<enc>}{<size>})
-%\[bxnf@pc/<spec>] % cache
+%\[bxnf@g@varid/<tfm>] % maximum used id number
+%\[bxnf@g@prm/<family>] % font parameter ({<enc>}{<size>})
+%\[bxnf@g@pc/<spec>] % cache
 \let\bxnf@stfm\relax
 
 %% \bxnf@get@family@name
 % Generates a family name and returns to \bxnf@fam.
 % The name is of the form "<tfm-name>(<id>)".
 \def\bxnf@get@family@name{%
-  \def\bxnf@tmpa{bxnf@pc/\bxnf@enc:\bxnf@tfm:%
+  \def\bxnf@tmpa{bxnf@g@pc/\bxnf@enc:\bxnf@tfm:%
       \ifbxnf@fixed \the\dimexpr\bxnf@size\relax \fi}%
   \letcs\bxnf@fam{\bxnf@tmpa}%
   \ifdef\bxnf@fam{%
@@ -269,8 +269,8 @@ __\bxnf@select@family{#1}}%
     \bxnf@oktrue
   }{%else
     \bxnf@sanitize@tfmname\bxnf@stfm
-    \csnumgdef{bxnf@varid/\bxnf@stfm}{\csuse{bxnf@varid/\bxnf@stfm}+1}%
-    \edef\bxnf@fam{\bxnf@stfm*\csuse{bxnf@varid/\bxnf@stfm}*}%
+    \csnumgdef{bxnf@g@varid/\bxnf@stfm}{\csuse{bxnf@g@varid/\bxnf@stfm}+1}%
+    \edef\bxnf@fam{\bxnf@stfm*\csuse{bxnf@g@varid/\bxnf@stfm}*}%
     \global\cslet{\bxnf@tmpa}\bxnf@fam
     \bxDebug{\bxnf@tmpa:=\bxnf@fam}%
     \bxnf@okfalse
@@ -303,11 +303,11 @@ __\bxnf@select@family{#1}}%
 }
 
 %% \def\bxnf@set@family@param
-% Sets \[bxnf@prm/*].
+% Sets \[bxnf@g@prm/*].
 \def\bxnf@set@family@param{%
-  \csxdef{bxnf@prm/\bxnf@fam}{{\bxnf@enc}%
+  \csxdef{bxnf@g@prm/\bxnf@fam}{{\bxnf@enc}%
       {\ifbxnf@fixed \expandafter\rem@pt\bxnf@size \fi}}%
-  \bxDebug{bxnf@prm/\bxnf@fam:=\csuse{bxnf@prm/\bxnf@fam}}%
+  \bxDebug{bxnf@g@prm/\bxnf@fam:=\csuse{bxnf@g@prm/\bxnf@fam}}%
 }
 
 %% \bxnf@declare@family
@@ -332,7 +332,7 @@ __\bxnf@select@family{#1}}%
 %% \bxnf@select@family{<family>}
 \def\bxnf@select@family#1{%
   \edef\bxnf@next{\noexpand\bxnf@select@family@a
-    {#1}\csuse{bxnf@prm/#1}}%
+    {#1}\csuse{bxnf@g@prm/#1}}%
   \bxnf@next
 }
 \def\bxnf@select@family@a#1#2#3{%
