@@ -406,7 +406,7 @@ __\bxnf@select@family{#1}}%
 
 %% \bxnf@curr@font\CS\Xfont
 \def\bxnf@curr@font#1#2{%
-  \xdef#1{\expandafter\meaning\the#2}%
+  \xdef#1{\fontname#2}%
 }
 
 \ifbxnf@ptex        %----<*pTeX>
@@ -456,11 +456,11 @@ __\bxnf@select@family{#1}}%
 \let\bxnf@ltx@newfont\newfont
 
 %%<*>\enhancenewfont
-\newcommand*\enhancenewfont{%
+\newrobustcmd*\enhancenewfont{%
   \let\newfont\newfontx}
 
 %%<*>\noenhancenewfont
-\newcommand*\noenhancenewfont{%
+\newrobustcmd*\noenhancenewfont{%
   \let\newfont\bxnf@ltx@newfont}
 
 %% initial
