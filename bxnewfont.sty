@@ -2,7 +2,7 @@
 
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxnewfont}[2016/03/27 v0.2]
+\ProvidesPackage{bxnewfont}[2016/08/07 v0.2a]
 
 %% preparation
 \def\bxnf@pkgname{bxnewfont}
@@ -85,26 +85,6 @@
   \ifbxnf@ok \bxnf@make@cmd#1\fi
 }
 
-%% \bxnf@split@name
-% Parses \bxnf@font and sets \bxnf@tfm and \bxnf@atcl.
-\def\bxnf@next#1{%
-  \def\bxnf@split@name{%
-    \expandafter\bxnf@split@name@a\bxnf@font\bxnf@mk#1\bxnf@end
-  }%
-  \def\bxnf@split@name@a##1#1##2\bxnf@end{%
-    \ifstrempty{##2}{%
-      \let\bxnf@tfm\bxnf@font \let\bxnf@atcl\relax
-    }{%else
-      \def\bxnf@tfm{##1}%
-      \bxnf@split@name@b##2\bxnf@end
-    }%
-  }%
-  \def\bxnf@split@name@b##1\bxnf@mk##2\bxnf@end{%
-    \def\bxnf@atcl{##1}%
-  }%
-}
-\bxnf@next{ }
-
 %% \bxnf@check@param
 % Sets bxnf@ok.
 \def\bxnf@check@param{%
@@ -138,7 +118,7 @@
   \unless\ifbxnf@fixed \unless\ifx\bxnf@atcl\relax
     \bxnf@error{You cannot use size spec here}{%
       The invalid size spec (\bxnf@atcl) is ignored.%
-      \MeesageBreak\@ehc}%
+      \MessageBreak\@ehc}%
   \fi\fi
 }
 
@@ -176,12 +156,106 @@ __\newrobustcmd*#2{\select font#1 }}%
 __\bxnf@select@family{#1}}%
 \endgroup
 
+%--------------------------------------- parse
+
+%% variables
+\let\bxnf@pre\relax
+\let\bxnf@post\relax
+\let\bxnf@quoted@part\relax
+
+%% \bxnf@split@at{<sep>}{<text>}
+% Splits the text by the given separator.
+% In success, it will set \bxnf@pre and \bxnf@post.
+\def\bxnf@split@at#1#2{%
+  \def\bxnf@next##1#1##2\bxnf@end{%
+    \bxnf@split@at@a{##1}{##2}}%
+  \bxnf@next#2\bxnf@mk#1\bxnf@end
+}
+\def\bxnf@split@at@a#1#2{%
+  \ifstrempty{#2}{%
+    \let\bxnf@pre\relax \let\bxnf@post\relax
+  }{%else
+    \def\bxnf@pre{#1}%
+    \bxnf@split@at@b#2\bxnf@end
+  }%
+}%
+\def\bxnf@split@at@b#1\bxnf@mk#2\bxnf@end{%
+  \def\bxnf@post{#1}%
+}%
+
+%% \bxnf@guard@quote\CS
+% Extract from the string a part enclosed by a pair of quotes,
+% and replaces the part with the cs '\bxnf@quoted@part'.
+% Then the cs is assigned to the content of the part.
+\def\bxnf@guard@quote#1{%
+  \let\bxnf@quoted@part\relax
+  \edef\bxnf@tmpb{{"}{#1}}%
+  \expandafter\bxnf@split@at\bxnf@tmpb
+  \unless\ifx\bxnf@pre\relax
+    \let\bxnf@tmpa\bxnf@pre \edef\bxnf@tmpb{{"}{\bxnf@post}}%
+    \expandafter\bxnf@split@at\bxnf@tmpb
+    \unless\ifx\bxnf@pre\relax
+      \let\bxnf@quoted@part\bxnf@pre
+      \edef#1{\bxnf@tmpa"\noexpand\bxnf@quoted@part"\bxnf@post}%
+    \fi
+  \fi
+}
+
+%% \bxnf@enclose@quote\CS
+% If the string does not contain a quote but does contain
+% a space, then the string will get enclosed by quotes.
+\def\bxnf@enclose@quote#1{%
+  \edef\bxnf@tmpa{#1}%
+  \edef\bxnf@tmpb{{"}{\bxnf@tmpa}}%
+  \expandafter\bxnf@split@at\bxnf@tmpb
+  \ifx\bxnf@pre\relax
+    \edef\bxnf@tmpb{{ }{\bxnf@tmpa}}%
+    \expandafter\bxnf@split@at\bxnf@tmpb
+    \unless\ifx\bxnf@pre\relax
+      \edef\bxnf@tmpa{"\bxnf@tmpa"}%
+    \fi
+  \fi
+  \let#1\bxnf@tmpa
+}
+
+%% \bxnf@split@name
+% Parses \bxnf@font and sets \bxnf@tfm and \bxnf@atcl.
+\def\bxnf@split@name{%
+  \let\bxnf@tfm\bxnf@font \let\bxnf@atcl\relax
+  \bxnf@guard@quote\bxnf@tfm
+  \expandafter\bxnf@split@name@a\bxnf@tfm\bxnf@end
+  \bxnf@enclose@quote\bxnf@tfm
+}
+\def\bxnf@split@name@a#1\bxnf@end{%
+  \let\bxnf@pre\relax
+  \def\do##1{%
+    \bxnf@split@name@b{##1}{#1}%
+  }%
+  \bxnf@split@sep@list
+}
+\def\bxnf@split@name@b#1#2{%
+  \ifx\bxnf@pre\relax
+    \bxnf@split@at{ #1}{#2}%
+    \unless\ifx\bxnf@pre\relax
+      \let\bxnf@tfm\bxnf@pre
+      \edef\bxnf@atcl{#1\bxnf@post}%
+    \fi
+  \fi
+}
+\let\do\relax
+\edef\bxnf@split@sep@list{%
+  \do{at}\do{scaled}%
+  \do{\detokenize{at}}%
+  \do{\detokenize{scaled}}%
+}
+
 %--------------------------------------- Family name
 
 %% variables
 %\[bxnf@varid/<tfm>] % maximum used id number
 %\[bxnf@prm/<family>] % font parameter ({<enc>}{<size>})
 %\[bxnf@pc/<spec>] % cache
+\let\bxnf@stfm\relax
 
 %% \bxnf@get@family@name
 % Generates a family name and returns to \bxnf@fam.
@@ -194,18 +268,44 @@ __\bxnf@select@family{#1}}%
     \bxDebug{\bxnf@tmpa==\bxnf@fam}%
     \bxnf@oktrue
   }{%else
-    \csnumdef{bxnf@varid/\bxnf@tfm}{\csuse{bxnf@varid/\bxnf@tfm}+1}%
-    \edef\bxnf@fam{\bxnf@tfm(\csuse{bxnf@varid/\bxnf@tfm})}%
-    \cslet{\bxnf@tmpa}\bxnf@fam
+    \bxnf@sanitize@tfmname\bxnf@stfm
+    \csnumgdef{bxnf@varid/\bxnf@stfm}{\csuse{bxnf@varid/\bxnf@stfm}+1}%
+    \edef\bxnf@fam{\bxnf@stfm*\csuse{bxnf@varid/\bxnf@stfm}*}%
+    \global\cslet{\bxnf@tmpa}\bxnf@fam
     \bxDebug{\bxnf@tmpa:=\bxnf@fam}%
     \bxnf@okfalse
   }%
 }
 
+%% \bxnf@sanitize@tfmname\CS
+\def\bxnf@sanitize@tfmname#1{%
+  \begingroup
+    \let\bxnf@pre\relax
+    \let\do\bxnf@sanitize@tfmname@a
+    \bxnf@sanitize@list
+    \ifx\bxnf@pre\relax
+      \global\let\bxnf@g@tmpa\bxnf@tfm
+    \else
+      \global\let\bxnf@g@tmpa\bxnf@@sanitized
+    \fi
+  \endgroup
+  \let#1\bxnf@g@tmpa
+}
+\def\bxnf@sanitize@tfmname@a#1{%
+  \ifx\bxnf@pre\relax
+    \edef\bxnf@tmpa{{#1}{\bxnf@tfm}}%
+    \expandafter\bxnf@split@at\bxnf@tmpa
+  \fi
+}
+\def\bxnf@@sanitized{(OpenType)}
+\def\bxnf@sanitize@list{%
+  \do{ }\do{:}\do{,}\do{;}\do{=}\do{/}%
+}
+
 %% \def\bxnf@set@family@param
 % Sets \[bxnf@prm/*].
 \def\bxnf@set@family@param{%
-  \csedef{bxnf@prm/\bxnf@fam}{{\bxnf@enc}%
+  \csxdef{bxnf@prm/\bxnf@fam}{{\bxnf@enc}%
       {\ifbxnf@fixed \expandafter\rem@pt\bxnf@size \fi}}%
   \bxDebug{bxnf@prm/\bxnf@fam:=\csuse{bxnf@prm/\bxnf@fam}}%
 }
