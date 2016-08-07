@@ -34,6 +34,9 @@
 %% variables
 \newbool{bxnf@ok}
 
+%% constants
+\def\bxnf@@star{*}
+
 %% \bxnf@cond\if...\fi{<true>}{<false>}
 \@gobbletwo\if\if \def\bxnf@cond#1\fi{%
   #1\expandafter\@firstoftwo
@@ -77,6 +80,7 @@
   }%]
 }
 \def\bxnf@newfontx@b#1[#2]#3{%
+  \bxnf@annihilate@setjascale
   \edef\bxnf@enc{#2}%
   \edef\bxnf@font{#3}%
   \bxnf@split@name
@@ -313,8 +317,13 @@ __\bxnf@select@family{#1}}%
 %% \bxnf@declare@family
 \def\bxnf@declare@family{%
   \DeclareFontFamily{\bxnf@enc}{\bxnf@fam}{}%
+  \let\bxnf@tmpb\@empty
+  \ifcase\bxnf@type\or
+  \or \let\bxnf@tmpb\bxnf@jfscale@spec
+  \or \let\bxnf@tmpb\bxnf@jfscale@spec
+  \fi
   \DeclareFontShape{\bxnf@enc}{\bxnf@fam}{m}{n}%
-      {<->\bxnf@tfm}{}%
+      {<->\bxnf@tmpb\bxnf@tfm}{}%
   % In pTeX, a dummy entry must be declared for the
   % encoding counterpart.
   \let\bxnf@tmpb\relax
@@ -446,6 +455,117 @@ __\bxnf@select@family{#1}}%
   \bxDebug{tnull=\bxnf@dsf@tnull}%
   \global\let\bxnf@get@tfm@info@init\relax
 }
+
+\fi                 %----</pTeX>
+
+%--------------------------------------- Ja-font scaling
+
+%% variables
+\def\bxnf@jfscale{1}
+
+%% error message
+\def\bxnf@err@ivjsc{%
+  \PackageError\bxnf@pkgname
+   {Invalid argument given to \string\newfontjascale
+    \MessageBreak(\bxnf@tmpa)}%
+   {\@eha}%
+}
+\def\bxnf@err@najsc{%
+  \PackageError\bxnf@pkgname
+   {The command is already invalidated}%
+   {\@eha}%
+}
+
+%% \bxnf@jfscale@spec
+\def\bxnf@jfscale@spec{%
+  \unless\ifdim\p@=\bxnf@jfscale\p@
+    s*[\bxnf@jfscale]%
+  \fi
+}
+
+%%<*>\newfontjascale
+\newrobustcmd*\newfontjascale[1]{%
+  \edef\bxnf@tmpa{#1}%
+  \ifx\bxnf@tmpa\bxnf@@star
+    \edef\bxnf@tmpa{\csuse{mcdefault}}%
+  \fi
+  \expandafter\bxnf@setjascale@a\bxnf@tmpa\bxnf@end
+}
+\def\bxnf@setjascale@a#1\bxnf@end{%
+  \ifblank{#1}{%
+    \bxnf@setjascale@real{1}%
+  }{%else
+    \bxnf@setjascale@b#1\bxnf@end%
+  }%
+}
+\def\bxnf@setjascale@b#1#2\bxnf@end{%
+  \ifcat\noexpand#10%
+    \afterassignment\bxnf@setjascale@c\dimen@ii=#1#2\p@\bxnf@stop
+  \else
+    \bxnf@setjascale@fam\bxnf@tmpa
+  \fi
+}
+\def\bxnf@setjascale@c#1\bxnf@stop{%
+  \ifstrempty{#1}{%
+    \edef\bxnf@tmpa{\strip@pt\dimen@ii}%
+    \bxnf@setjascale@real\bxnf@tmpa
+  }{%else
+    \bxnf@err@ivjsc
+  }%
+}
+
+%% \bxnf@setjascale@real
+\let\bxnf@setjascale@real\@gobble
+%% \bxnf@setjascale@fam
+\let\bxnf@setjascale@fam\@gobble
+
+%% \bxnf@annihilate@setjascale
+\def\bxnf@annihilate@setjascale{%
+  \global\let\bxnf@annihilate@setjascale\relax
+  \gdef\newfontjascale##1{%
+    \bxnf@err@najsc
+  }%
+  \global\let\bxnf@setjascale@a\@undefined
+  \global\let\bxnf@setjascale@b\@undefined
+  \global\let\bxnf@setjascale@c\@undefined
+  \global\let\bxnf@setjascale@real\@undefined
+  \global\let\bxnf@setjascale@fam\@undefined
+}
+
+\ifbxnf@ptex        %----<*pTeX>
+
+%% \bxnf@setjascale@real
+\def\bxnf@setjascale@real#1{%
+  \edef\bxnf@jfscale{#1}%
+  \bxDebug{jfscale:=\bxnf@jfscale}%
+}
+%% \bxnf@setjascale@fam
+\def\bxnf@setjascale@fam#1{%
+  \letcs\bxnf@tmpb{\cy@encoding/#1/m/n}%
+  \ifdef\bxnf@tmpb{%
+    \expandafter\bxnf@setjascale@fam@a\meaning\bxnf@tmpb\bxnf@end
+  }{%else
+    \bxnf@err@ivjsc
+  }%
+}
+\begingroup
+  \catcode`\S=12
+  \lowercase{%
+    \gdef\bxnf@setjascale@fam@a#1\bxnf@end{%
+      \def\bxnf@tmpb{1}%
+      \bxnf@split@at{<->S*[}{#1}%
+      \ifx\bxnf@pre\relax \bxnf@split@at{<->*[}{#1}\fi
+      \unless\ifx\bxnf@pre\relax
+        \edef\bxnf@tmpb{{]}{\bxnf@post}}%
+        \expandafter\bxnf@split@at\bxnf@tmpb
+        \unless\ifx\bxnf@pre\relax
+          \let\bxnf@tmpb\bxnf@pre
+        \fi
+      \fi
+      \bxnf@setjascale@real\bxnf@tmpb
+    }%
+  }%
+\endgroup
 
 \fi                 %----</pTeX>
 
