@@ -70,6 +70,9 @@ Available options:
 Revision History
 ----------------
 
+  * Version 0.2b ‹2017/05/01›
+      - Change the rule for automatic quoting. Namely, names which are
+        judged as illegal by mktextfm should be quoted.
   * Version 0.2a ‹2016/08/08›
       - Now “TFM” names can contain spaces with suitable quoting.
         This enables one to specify OpenType fonts on Unicode engines.
