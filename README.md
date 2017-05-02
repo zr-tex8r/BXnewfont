@@ -70,6 +70,10 @@ Available options:
 Revision History
 ----------------
 
+  * Version 0.2a ‹2016/08/08›
+      - Now “TFM” names can contain spaces with suitable quoting.
+        This enables one to specify OpenType fonts on Unicode engines.
+      - An experimental command `\newfontjascale` is added.
   * Version 0.2  ‹2016/03/27›
       - The first public version.
 
