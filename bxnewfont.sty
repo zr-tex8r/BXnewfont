@@ -1,8 +1,16 @@
-% bxnewfont.sty
+%%
+%% This is file 'bxnewfont.sty'.
+%% 
+%% Copyright (c) 2017 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
 
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxnewfont}[2016/08/08 v0.2a]
+\ProvidesPackage{bxnewfont}[2017/05/01 v0.2b]
 
 %% preparation
 \def\bxnf@pkgname{bxnewfont}
@@ -94,11 +102,12 @@
 \def\bxnf@check@param{%
   \bxnf@oktrue
   \bxnf@get@tfm@info
-  \unless\ifdim\bxnf@size>\z@
+  \unless\ifnum\bxnf@type=\z@ \unless\ifdim\bxnf@size>\z@
     \chardef\bxnf@type\z@
-  \fi
+  \fi\fi
   \ifnum\bxnf@type=\z@
     \bxnf@error{Failed in getting TFM info}\@eha
+    \let\bxnf@enc\cf@encoding
     \bxnf@okfalse
   \else
     \ifx\bxnf@enc\@empty
@@ -213,13 +222,52 @@ __\bxnf@select@family{#1}}%
   \edef\bxnf@tmpb{{"}{\bxnf@tmpa}}%
   \expandafter\bxnf@split@at\bxnf@tmpb
   \ifx\bxnf@pre\relax
-    \edef\bxnf@tmpb{{ }{\bxnf@tmpa}}%
-    \expandafter\bxnf@split@at\bxnf@tmpb
+    \edef\bxnf@tmpb{{\bxnf@tmpa}}%
+    \expandafter\bxnf@find@unsafe@char\bxnf@tmpb
     \unless\ifx\bxnf@pre\relax
       \edef\bxnf@tmpa{"\bxnf@tmpa"}%
     \fi
   \fi
   \let#1\bxnf@tmpa
+}
+
+%% \bxnf@find@unsafe@char
+\def\bxnf@find@unsafe@char#1{%
+  \bxnf@find@unsafe@char@a#1\bxnf@end
+}
+\def\bxnf@find@unsafe@char@a{%
+  \futurelet\bxnf@tok\bxnf@find@unsafe@char@b
+}
+\def\bxnf@find@unsafe@char@b{%
+  \ifx\bxnf@tok\bxnf@end
+    \let\bxnf@tok\relax
+    \let\bxnf@tmpb\bxnf@find@unsafe@char@c
+  \else\ifcat A\noexpand\bxnf@tok
+    \let\bxnf@tmpb\bxnf@find@unsafe@char@d
+  \else\ifcat 0\noexpand\bxnf@tok
+    \let\bxnf@tmpb\bxnf@find@unsafe@char@e
+  \else\ifcat _\noexpand\bxnf@tok
+    \let\bxnf@tmpb\bxnf@find@unsafe@char@e
+  \else
+    \let\bxnf@tmpb\bxnf@find@unsafe@char@c
+  \fi\fi\fi\fi
+  \bxnf@tmpb
+}
+\def\bxnf@find@unsafe@char@c#1\bxnf@end{%
+  \let\bxnf@pre= \bxnf@tok
+}
+\def\bxnf@find@unsafe@char@d#1{%
+  \bxnf@find@unsafe@char@a
+}
+\def\bxnf@find@unsafe@char@e#1{%
+  \ifcsundef{bxnf@sc/#1}{%
+    \bxnf@find@unsafe@char@c
+  }{%else
+    \bxnf@find@unsafe@char@a
+  }%
+}
+\@tfor\bxnf@tmpa:=0123456789.-_+\do{%
+  \cslet{bxnf@sc/\bxnf@tmpa}{t}%
 }
 
 %% \bxnf@split@name
@@ -360,6 +408,7 @@ __\bxnf@select@family{#1}}%
 
 %% \bxnf@get@tfm@info
 \def\bxnf@get@tfm@info{%
+  \bxDebug{name=\bxnf@tfm}%
   \begingroup
     \chardef\bxnf@type=0 \let\bxnf@size\@empty
     \font\bxnf@tmpa=\bxnf@tfm\space scaled 2000\relax
